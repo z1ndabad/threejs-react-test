@@ -1,9 +1,8 @@
 import viteLogo from "/vite.svg";
 import { Card } from "@/components/ui/card";
 import "./index.css";
-import { Canvas } from "@react-three/fiber";
-import { Player } from "@/components/mesh/Player";
-
+import { HollowGlobe } from "./components/mesh/HollowGlobe";
+// TODO: scale canvas based on parent dimensions
 function App() {
   return (
     <div id="app" className="flex h-full flex-col items-center text-center">
@@ -14,11 +13,7 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <Card id="canvas-container" className="bg-foreground h-3/4 w-3/4">
-        <Canvas camera={{ position: [0, 0, 10] }}>
-          <ambientLight intensity={0.01} />
-          <directionalLight color="white" position={[5, 0, 0]} />
-          <Player />
-        </Canvas>
+        <HollowGlobe />
       </Card>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
