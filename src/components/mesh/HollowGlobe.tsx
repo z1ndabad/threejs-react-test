@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { FeatureCollection, GeoJsonProperties } from "geojson";
 import Globe, { GlobeProps } from "react-globe.gl";
 import { DoubleSide, MeshLambertMaterial } from "three";
@@ -6,17 +7,22 @@ import { Topology, Objects } from "topojson-specification";
 import * as landJson from "world-atlas/land-110m.json";
 
 function HollowGlobe(props: GlobeProps) {
-  const landFeatures = topoJson.feature(
-    landJson as unknown as Topology<Objects<GeoJsonProperties>>,
-    //@ts-expect-error String literal union expected
-    landJson.objects.land,
-  ) as unknown as FeatureCollection;
+  // memoize since we aren't retexturing the globe
+  const { landPolygons, polygonsMaterial } = useMemo(() => {
+    const landFeatures = topoJson.feature(
+      landJson as unknown as Topology<Objects<GeoJsonProperties>>,
+      //@ts-expect-error String literal union expected
+      landJson.objects.land,
+    ) as unknown as FeatureCollection;
 
-  const landPolygons = landFeatures.features;
-  const polygonsMaterial = new MeshLambertMaterial({
-    color: "white",
-    side: DoubleSide,
-  });
+    const landPolygons = landFeatures.features;
+    const polygonsMaterial = new MeshLambertMaterial({
+      color: "white",
+      side: DoubleSide,
+    });
+
+    return { landPolygons, polygonsMaterial };
+  }, []);
 
   return (
     <Globe
