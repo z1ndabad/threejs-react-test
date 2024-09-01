@@ -1,5 +1,5 @@
 import viteLogo from "/vite.svg";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import "@/index.css";
 import { HollowGlobe } from "@/components/mesh/HollowGlobe";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
@@ -22,7 +22,9 @@ function App() {
         className="bg-foreground h-3/4 w-3/4"
         ref={containerRef}
       >
-        <HollowGlobe width={width} height={height} />
+        <CardContent ref={containerRef}>
+          <HollowGlobe width={width} height={height} />
+        </CardContent>
       </Card>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
