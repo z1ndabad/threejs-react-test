@@ -1,5 +1,15 @@
 {
   "tailwindAttributes": ["variantConfig"],
   "tailwindFunctions": ["cn", "cva", "clsx", "twMerge", "tw"],
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "importOrder": [
+    "^@core/(.*)$",
+    "^@server/(.*)$",
+    "^@ui/(.*)$",
+    "^@/(.*)$",
+    "^[./]"
+  ],
+  "plugins": [
+    "prettier-plugin-tailwindcss",
+    "@trivago/prettier-plugin-sort-imports"
+  ]
 }
