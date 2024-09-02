@@ -71,6 +71,11 @@ function HollowGlobe(props: GlobeProps) {
     }
   }, [positions]);
 
+  const markerSvg = `<svg viewBox="-4 0 36 36">
+    <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
+    <circle fill="black" cx="14" cy="14" r="7"></circle>
+  </svg>`;
+
   return (
     <Globe
       ref={globeRef}
@@ -81,16 +86,17 @@ function HollowGlobe(props: GlobeProps) {
       polygonCapMaterial={polygonsMaterial}
       polygonSideColor={() => "rgba(0, 0, 0, 0)"}
       polygonAltitude={0} // defaults to 0.01 -- marker altitude needs to be adjusted when using a nonzero value
-      objectsData={positions}
-      // TODO: theming for accessors
-      objectLabel={(d) =>
-        `<div style='color: red'>${(d as GlobePoint).label}</div>`
-      }
-      objectLat={"latitude"}
-      objectLng={"longitude"}
-      // TODO: figure out correct altitude calculations--passing it directly draws markers in the wrong positons
-      objectAltitude={0}
-      objectThreeObject={aircraftMarker}
+      htmlElementsData={positions}
+      htmlLat={"latitude"}
+      htmlLng={"longitude"}
+      htmlElement={() => {
+        const el = document.createElement("div");
+        el.innerHTML = markerSvg;
+        el.style.color = "red";
+        el.style.width = "10px";
+        return el;
+      }}
+      htmlTransitionDuration={2000}
       {...props}
     />
   );
