@@ -1,8 +1,9 @@
-import viteLogo from "/vite.svg";
-import { Card, CardContent } from "@/components/ui/card";
-import "@/index.css";
 import { HollowGlobe } from "@/components/mesh/HollowGlobe";
+import { Card, CardContent } from "@/components/ui/card";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
+import "@/index.css";
+import viteLogo from "/vite.svg";
+
 // TODO: scale canvas based on parent dimensions
 
 function App() {
@@ -17,12 +18,8 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <Card
-        id="canvas-container"
-        className="bg-foreground h-3/4 w-3/4"
-        ref={containerRef}
-      >
-        <CardContent ref={containerRef}>
+      <Card id="canvas-container" className="bg-black h-3/4 w-3/4">
+        <CardContent className="h-full" ref={containerRef}>
           <HollowGlobe width={width} height={height} />
         </CardContent>
       </Card>
