@@ -1,5 +1,5 @@
 import { RequestHandler, WebSocketHandler, ws } from "msw";
-import { OpenSkyResponse } from "@/api/opensky";
+import { OpenSkyResponse } from "@/types/opensky";
 import flightJson from "./aircraftdata-clean-long.json";
 
 const vectors = flightJson as { data: OpenSkyResponse[] };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import useWebSocket from "react-use-websocket";
-import { Ensure } from "@/util/types";
-import { OpenSkyResponse, StateVector } from "./opensky";
+import { OpenSkyResponse, StateVector } from "@/types/opensky";
+import { Ensure } from "@/types/utils";
 
 type DisplayableVector = Ensure<
   StateVector,
@@ -10,7 +10,6 @@ type DisplayableVector = Ensure<
 
 export type AircraftPositions = Pick<OpenSkyResponse, "time"> & {
   states: DisplayableVector[];
-  paths: { [key: string]: DisplayableVector[] };
 };
 
 // TODO: move cleaning to backend/MSW after deciding what to do with undefined/null values
@@ -25,13 +24,12 @@ function cleanStateVectors(vec: StateVector): boolean {
   );
 }
 
-function useAircraftPositions(): AircraftPositions {
+function useFetchAircraftPosiions(): AircraftPositions {
   // TODO: Remember to replace prod API endpoint with wss:// for SSL
   const socketUrl = "ws://localhost:3000";
   const [data, setData] = useState<AircraftPositions>({
     time: -1,
     states: [],
-    paths: {},
   });
   const { lastMessage } = useWebSocket(socketUrl);
 
@@ -42,24 +40,9 @@ function useAircraftPositions(): AircraftPositions {
         cleanStateVectors,
       ) as DisplayableVector[];
 
-      // TODO: move paths to backend/MSW -- client-side is a bad idea, no persistence
-      const newPaths = cleanedStates.reduce(
-        (acc, curr) => {
-          const old = data.paths[curr.icao24];
-          if (old) {
-            acc[curr.icao24] = [...old, curr];
-          } else {
-            acc[curr.icao24] = [curr];
-          }
-          return acc;
-        },
-        {} as AircraftPositions["paths"],
-      );
-
       setData({
         time: parsedStates.time,
         states: cleanedStates,
-        paths: newPaths,
       });
     }
   }, [lastMessage]);
@@ -67,8 +50,7 @@ function useAircraftPositions(): AircraftPositions {
   return {
     time: data.time,
     states: data.states,
-    paths: data.paths,
   };
 }
 
-export { useAircraftPositions };
+export { useFetchAircraftPosiions };
