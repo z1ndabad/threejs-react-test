@@ -39,21 +39,20 @@ function HollowGlobe(props: GlobeProps) {
     side: DoubleSide,
   });
 
-  const { aircraftData } = useAircraftPositions();
-  // TODO: add persisent labels layer?
+  const { states } = useAircraftPositions();
   // TODO: positions are not reliable -- when a plane leaves the array, we should assume it keeps going the same directions
   // also, why are they not really moving? Do I need a longer monitoring window?
-  const positions: GlobePoint[] = aircraftData.states.map(
-    ({ icao24, latitude, longitude, baro_altitude }) => {
+  const positions: GlobePoint[] = states.map(
+    ({ icao24, latitude, longitude, geo_altitude }) => {
       return {
+        longitude,
+        latitude,
+        altitude: geo_altitude,
         label: icao24 ?? "",
-        latitude: latitude ?? 0,
-        longitude: longitude ?? 0,
-        altitude: baro_altitude ?? 0,
       };
     },
   );
-  console.log(aircraftData);
+  console.log(states);
   const globeRef = useRef<GlobeMethods>();
 
   const aircraftMarker = useMemo(() => {
@@ -61,7 +60,7 @@ function HollowGlobe(props: GlobeProps) {
     const aircraftGeometry = new OctahedronGeometry(0.25);
     const aircraftMaterial = new MeshLambertMaterial({ color: "red" });
     return new Mesh(aircraftGeometry, aircraftMaterial);
-  }, [aircraftData]);
+  }, [states]);
 
   useEffect(() => {
     if (globeRef.current) {
@@ -70,6 +69,8 @@ function HollowGlobe(props: GlobeProps) {
       console.log(scene().toJSON());
     }
   }, [positions]);
+
+  const EARTH_RADIUS_KM = 6371;
 
   return (
     <Globe
