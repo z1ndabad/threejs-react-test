@@ -10,8 +10,10 @@ type DisplayableVector = Ensure<
 
 export type AircraftPositions = Pick<OpenSkyResponse, "time"> & {
   states: DisplayableVector[];
+  paths: { [key: string]: DisplayableVector[] };
 };
 
+// TODO: move cleaning to backend/MSW after deciding what to do with undefined/null values
 function cleanStateVectors(vec: StateVector): boolean {
   return (
     vec.longitude !== null &&
@@ -29,22 +31,43 @@ function useAircraftPositions(): AircraftPositions {
   const [data, setData] = useState<AircraftPositions>({
     time: -1,
     states: [],
+    paths: {},
   });
   const { lastMessage } = useWebSocket(socketUrl);
 
   useEffect(() => {
     if (lastMessage) {
-      const parsed = JSON.parse(lastMessage.data) as OpenSkyResponse;
-      const cleaned = parsed.states.filter(
+      const parsedStates = JSON.parse(lastMessage.data) as OpenSkyResponse;
+      const cleanedStates = parsedStates.states.filter(
         cleanStateVectors,
       ) as DisplayableVector[];
-      setData({ time: parsed.time, states: cleaned });
+
+      // TODO: move paths to backend/MSW -- client-side is a bad idea, no persistence
+      const newPaths = cleanedStates.reduce(
+        (acc, curr) => {
+          const old = data.paths[curr.icao24];
+          if (old) {
+            acc[curr.icao24] = [...old, curr];
+          } else {
+            acc[curr.icao24] = [curr];
+          }
+          return acc;
+        },
+        {} as AircraftPositions["paths"],
+      );
+
+      setData({
+        time: parsedStates.time,
+        states: cleanedStates,
+        paths: newPaths,
+      });
     }
   }, [lastMessage]);
 
   return {
     time: data.time,
     states: data.states,
+    paths: data.paths,
   };
 }
 

@@ -1,11 +1,12 @@
 import { FeatureCollection, GeoJsonProperties } from "geojson";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Globe, { GlobeMethods, GlobeProps } from "react-globe.gl";
 import {
   CircleGeometry,
   DoubleSide,
   Mesh,
   MeshLambertMaterial,
+  MeshPhongMaterial,
   OctahedronGeometry,
 } from "three";
 import * as topoJson from "topojson-client";
@@ -14,6 +15,8 @@ import * as landJson from "world-atlas/land-110m.json";
 import { OpenSkyResponse, StateVector } from "@/api/opensky";
 import { useAircraftPositions } from "@/api/socket";
 
+type PathSet = { [key: string]: Omit<GlobePoint, "label">[][] };
+
 type GlobePoint = {
   label: string;
   longitude: number;
@@ -21,12 +24,20 @@ type GlobePoint = {
   altitude: number;
 };
 
-// TODO - bug: incorrect number of 3D object markers render on the globe. Verified that
-// the correct # of datapoints is passed to the Scene, and that it works properly using
-// HTML element markers instead of 3D objects
 function HollowGlobe(props: GlobeProps) {
   // Ref to actual Globe element for debugging
   const globeRef = useRef<GlobeMethods>();
+
+  // Globe materials
+  const globeMaterial = useMemo(
+    () =>
+      new MeshPhongMaterial({
+        color: "black",
+        transparent: true,
+        opacity: 0.95,
+      }),
+    [],
+  );
 
   // Landmass drawings
   const landFeatures = useMemo(() => {
@@ -43,8 +54,16 @@ function HollowGlobe(props: GlobeProps) {
     side: DoubleSide,
   });
 
+  // Aircraft drawings
+  const aircraftMarker = useMemo(() => {
+    // TODO: scale these based on initial globe size (in case container grows/shrinks)
+    const aircraftGeometry = new OctahedronGeometry(0.25);
+    const aircraftMaterial = new MeshLambertMaterial({ color: "red" });
+    return new Mesh(aircraftGeometry, aircraftMaterial);
+  }, []);
+
   // Aircraft position data retrieval & processing
-  const { states } = useAircraftPositions();
+  const { states, paths } = useAircraftPositions();
   const EARTH_RADIUS_KM = 6371;
   const KM_IN_M = 0.001;
   const ALTITUDE_SCALE_FACTOR = 10;
@@ -60,13 +79,6 @@ function HollowGlobe(props: GlobeProps) {
     },
   );
 
-  const aircraftMarker = useMemo(() => {
-    // TODO: scale these based on initial globe size (in case container grows/shrinks)
-    const aircraftGeometry = new OctahedronGeometry(0.25);
-    const aircraftMaterial = new MeshLambertMaterial({ color: "red" });
-    return new Mesh(aircraftGeometry, aircraftMaterial);
-  }, [states]);
-
   useEffect(() => {
     if (globeRef.current) {
       const scene = globeRef.current.scene;
@@ -74,6 +86,9 @@ function HollowGlobe(props: GlobeProps) {
       console.log(scene().toJSON());
     }
   }, [positions]);
+
+  // console.log("PATHS");
+  // console.log(paths);
 
   //THEN: add paths
   //use the Paths layer
@@ -84,12 +99,13 @@ function HollowGlobe(props: GlobeProps) {
     <Globe
       ref={globeRef}
       backgroundColor="black" // TODO: theme this later
-      showGlobe={false}
+      showGlobe={true}
+      globeMaterial={globeMaterial}
       showAtmosphere={false}
       polygonsData={landPolygons}
       polygonCapMaterial={polygonsMaterial}
       polygonSideColor={() => "rgba(0, 0, 0, 0)"}
-      polygonAltitude={0} // defaults to 0.01 -- marker altitude needs to be adjusted when using a nonzero value
+      polygonAltitude={0.01} // defaults to 0.01 -- marker altitude needs to be adjusted when using a nonzero value
       objectsData={positions}
       // TODO: theming for accessors
       objectLabel={(d) =>
@@ -100,6 +116,15 @@ function HollowGlobe(props: GlobeProps) {
       // TODO: figure out correct altitude calculations--passing it directly draws markers in the wrong positons
       objectAltitude={"altitude"}
       objectThreeObject={aircraftMarker}
+      pathsData={Object.values(paths)}
+      pathPoints={(d) => {
+        // console.log("ACCESSOR");
+        // console.log(d);
+        return d.map((vec) => {
+          return [vec.latitude, vec.longitude, vec.geo_altitude];
+        });
+      }}
+      // pathPointAlt={(pnt) => pnt[2]}
       {...props}
     />
   );
