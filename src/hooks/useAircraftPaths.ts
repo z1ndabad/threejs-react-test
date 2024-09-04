@@ -7,6 +7,7 @@ export type GlobePoint = {
   longitude: number;
   latitude: number;
   altitude: number;
+  rotation: number;
 };
 
 export type AircraftPaths = Pick<OpenSkyResponse, "time"> & {
@@ -31,6 +32,7 @@ function useAircraftPaths(): AircraftPaths {
           longitude: curr.longitude,
           latitude: curr.latitude,
           altitude: curr.geo_altitude,
+          rotation: curr.true_track,
         };
         const record = data.paths[update.label];
         if (record) {

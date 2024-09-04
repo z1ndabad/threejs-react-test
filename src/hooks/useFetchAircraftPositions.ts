@@ -5,7 +5,7 @@ import { Ensure } from "@/types/utils";
 
 type DisplayableVector = Ensure<
   StateVector,
-  "longitude" | "latitude" | "geo_altitude"
+  "longitude" | "latitude" | "geo_altitude" | "true_track"
 >;
 
 export type AircraftPositions = Pick<OpenSkyResponse, "time"> & {
@@ -13,6 +13,7 @@ export type AircraftPositions = Pick<OpenSkyResponse, "time"> & {
 };
 
 // TODO: move cleaning to backend/MSW after deciding what to do with undefined/null values
+// TODO: find a cleaner way to express non-null/undefined values -- the values could be 0, which is allowed
 function cleanStateVectors(vec: StateVector): boolean {
   return (
     vec.longitude !== null &&
