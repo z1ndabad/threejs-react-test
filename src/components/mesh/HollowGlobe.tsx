@@ -1,8 +1,7 @@
 import { FeatureCollection, GeoJsonProperties } from "geojson";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Globe, { GlobeMethods, GlobeProps } from "react-globe.gl";
 import {
-  CircleGeometry,
   DoubleSide,
   Mesh,
   MeshLambertMaterial,
@@ -15,20 +14,26 @@ import { Topology, Objects } from "topojson-specification";
 import * as landJson from "world-atlas/land-110m.json";
 import { GlobePoint, useAircraftPaths } from "@/hooks/useAircraftPaths";
 
-function calculateDisplayAltitude(alt: number) {
+function calculateDisplayAltitude(alt: number, landElevation: number) {
   const EARTH_RADIUS_KM = 6371;
   const KM_IN_M = 0.001;
   const ALTITUDE_SCALE_FACTOR = 10;
-  return (alt * KM_IN_M * ALTITUDE_SCALE_FACTOR) / EARTH_RADIUS_KM + 0.012;
+  const ELEVATION_OFFSET = 0.01;
+  return (
+    (alt * KM_IN_M * ALTITUDE_SCALE_FACTOR) / EARTH_RADIUS_KM +
+    landElevation +
+    ELEVATION_OFFSET
+  );
 }
 
 function getTooltip(content: string) {
-  return `<div style='color: red; background-color: white; padding: 2px 8px 2px 8px; border-radius: 2px; font-weight: bold'>${content}</div>`;
+  return `<div style='border: solid black 1px; color: red; background-color: white; padding: 2px 8px 2px 8px; border-radius: 2px; font-weight: bold'>${content}</div>`;
 }
 
 // TODO:
 // - Increase scroll sensitivity for zoom -- takes too long to zoom in
 // - Update path lines and plane markers to be prettier
+// - Probe for raycaster/intersection bugs by mousing over markers/paths -- hard to reproduce
 function HollowGlobe(props: GlobeProps) {
   // Ref to actual Globe element for debugging
   const globeRef = useRef<GlobeMethods>();
@@ -63,8 +68,9 @@ function HollowGlobe(props: GlobeProps) {
   });
 
   // Aircraft drawings
-  const pathColor = "orangered";
-  const hoverColor = "blue";
+  const pathColor = "royalblue";
+  const hoverColor = "orangered";
+  const landElevation = 0.01;
 
   // TODO: scale these based on initial globe size (in case container grows/shrinks)
   // NOTE that onObjectHover does not support functions that return memoized instances of Mesh, only new Mesh objects.
@@ -95,7 +101,6 @@ function HollowGlobe(props: GlobeProps) {
   const { paths } = useAircraftPaths();
   const displayPaths = Object.values(paths);
   const currentPositions = displayPaths.map((path) => path[path.length - 1]);
-  console.log(paths);
 
   return (
     <Globe
@@ -107,26 +112,30 @@ function HollowGlobe(props: GlobeProps) {
       polygonsData={landPolygons}
       polygonCapMaterial={polygonsMaterial}
       polygonSideColor={() => "rgba(0, 0, 0, 0)"}
-      polygonAltitude={0.01} // defaults to 0.01 -- marker altitude needs to be adjusted when using a nonzero value
+      polygonAltitude={landElevation} // defaults to 0.01 -- marker altitude needs to be adjusted when using a nonzero value
+      polygonsTransitionDuration={0}
       objectsData={currentPositions}
       objectLabel={(d) => getTooltip((d as GlobePoint).label)}
       objectLat={"latitude"}
       objectLng={"longitude"}
       objectAltitude={(d) =>
-        calculateDisplayAltitude((d as GlobePoint).altitude)
+        calculateDisplayAltitude((d as GlobePoint).altitude, landElevation)
       }
       objectThreeObject={(d) =>
         objRepresent(d as (Object3D & GlobePoint) | null)
       }
-      // @ts-expect-error incorrect package type -- supports setState<Object3D>
-      onObjectHover={(d) => setHovered(d?.label)}
+      onObjectHover={(d) => {
+        console.log(d);
+        const t = d as (Object3D & GlobePoint) | null;
+        setHovered(t ? t.label : "");
+      }}
       pathsData={displayPaths}
       pathPoints={(d) => {
         return (d as GlobePoint[]).map((pt) => {
           return [pt.latitude, pt.longitude, pt.altitude];
         });
       }}
-      pathPointAlt={(pnt) => calculateDisplayAltitude(pnt[2])}
+      pathPointAlt={(pnt) => calculateDisplayAltitude(pnt[2], landElevation)}
       pathTransitionDuration={0}
       // @ts-expect-error incorrect package type
       pathColor={(d: GlobePoint[]) =>
