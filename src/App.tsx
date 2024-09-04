@@ -18,10 +18,12 @@ function App() {
         </a>
       </div>
       <h1>Vite + React</h1>
-      <Card id="canvas-container" className="bg-black h-3/4 w-3/4">
-        <CardContent className="h-full" ref={containerRef}>
-          <HollowGlobe width={width} height={height} />
-        </CardContent>
+      <Card
+        id="canvas-container"
+        className="bg-black h-3/4 w-3/4"
+        ref={containerRef}
+      >
+        <HollowGlobe width={width} height={height} />
       </Card>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
