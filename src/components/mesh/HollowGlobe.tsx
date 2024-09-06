@@ -1,5 +1,5 @@
 import { FeatureCollection, GeoJsonProperties } from "geojson";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Globe, { GlobeMethods, GlobeProps } from "react-globe.gl";
 import {
   DoubleSide,
@@ -31,15 +31,13 @@ function getTooltip(content: string) {
 }
 
 // TODO:
-// - Increase scroll sensitivity for zoom -- takes too long to zoom in
 // - Update path lines and plane markers to be prettier
+// - Nicer tooltip box (may need to stop using objectLabel entirely and draw a new component over on hover, at the current mouse position)
 // - Probe for raycaster/intersection bugs by mousing over markers/paths -- hard to reproduce
 function HollowGlobe(props: GlobeProps) {
-  // Ref to actual Globe element for debugging
-  const globeRef = useRef<GlobeMethods>();
-
   // Stores the ICAO24 code of the hovered marker/path
   const [hovered, setHovered] = useState("");
+  const globeRef = useRef<GlobeMethods>();
 
   // Globe materials
   const globeMaterial = useMemo(
@@ -102,6 +100,19 @@ function HollowGlobe(props: GlobeProps) {
   const displayPaths = Object.values(paths);
   const currentPositions = displayPaths.map((path) => path[path.length - 1]);
 
+  // OrbitControls customization
+  useEffect(() => {
+    const controls = globeRef.current?.controls();
+    if (globeRef.current && controls) {
+      // required to override default zoom speed
+      controls.addEventListener("change", () => {
+        let pov = globeRef.current!.pointOfView();
+        controls.rotateSpeed = pov!.altitude * 0.2;
+        controls.zoomSpeed = (pov.altitude + 1) * 0.6;
+      });
+    }
+  }, [globeRef.current]);
+
   return (
     <Globe
       ref={globeRef}
@@ -125,7 +136,6 @@ function HollowGlobe(props: GlobeProps) {
         objRepresent(d as (Object3D & GlobePoint) | null)
       }
       onObjectHover={(d) => {
-        console.log(d);
         const t = d as (Object3D & GlobePoint) | null;
         setHovered(t ? t.label : "");
       }}
